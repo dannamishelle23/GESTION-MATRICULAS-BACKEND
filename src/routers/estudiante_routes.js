@@ -1,5 +1,5 @@
 import {Router} from 'express';
-import { crearEstudiante, listarEstudiantes, detalleEstudiante, actualizarEstudiante } from '../controllers/estudiante_controller.js';
+import { crearEstudiante, listarEstudiantes, detalleEstudiante, actualizarEstudiante, eliminarEstudiante } from '../controllers/estudiante_controller.js';
 import { verificarTokenJWT } from '../middlewares/JWT.js';
 
 const router = Router();
@@ -13,5 +13,7 @@ router.get('/estudiantes/listar-estudiantes', verificarTokenJWT, listarEstudiant
 router.get('/estudiantes/detalle-estudiante/:id', verificarTokenJWT, detalleEstudiante)
 //3. ACTUALIZAR INFO ESTUDIANTES
 router.put('/estudiantes/actualizar-estudiante/:id', verificarTokenJWT, actualizarEstudiante)
+//4. ELIMINAR ESTUDIANTES (ESTADO INACTIVO)
+router.delete('/estudiantes/eliminar-estudiante/:id', verificarTokenJWT, eliminarEstudiante)
 
 export default router;

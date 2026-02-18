@@ -37,7 +37,6 @@ const crearEstudiante = async(req,res) => {
 }
 
 //2. Ver/listar estudiantes.
-//2. Ver/listar estudiantes.
 const listarEstudiantes = async (req, res) => {
     try {
 
@@ -58,6 +57,7 @@ const listarEstudiantes = async (req, res) => {
             telefono: est.telefono,
             email: est.usuario?.email,
             rol: est.usuario?.rol,
+            estadoEstudiante: est.estadoEstudiante,
             creadoPor: {
                 nombre: est.creadoPor?.nombre,
                 apellido: est.creadoPor?.apellido,
@@ -110,6 +110,7 @@ const detalleEstudiante = async (req, res) => {
             telefono: estudiante.telefono,
             email: estudiante.usuario?.email,
             rol: estudiante.usuario?.rol,
+            estadoEstudiante: estudiante.estadoEstudiante,
             creadoPor: {
                 id: estudiante.creadoPor?._id,
                 nombre: estudiante.creadoPor?.nombre,
@@ -196,9 +197,26 @@ const actualizarEstudiante = async (req, res) => {
     }
 };
 
+const eliminarEstudiante = async (req,res)=>{
+
+    try {
+        const {id} = req.params
+        const {salidaEstudiante} = req.body
+        if (Object.values(req.body).includes("")) return res.status(400).json({msg:"Debes llenar todos los campos"})
+        if( !mongoose.Types.ObjectId.isValid(id) ) return res.status(404).json({msg:`No existe el estudiante ${id}`})
+        await Estudiante.findByIdAndUpdate(id,{salidaEstudiante:Date.parse(salidaEstudiante),estadoEstudiante:false})
+        res.status(200).json({msg:"Fecha de salida registrado exitosamente. El estudiante ha sido marcado como inactivo."})
+
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({ msg: `Error al eliminar estudiante - ${error}` })
+    }
+}
+
 export {
     crearEstudiante,
     listarEstudiantes,
     detalleEstudiante,
-    actualizarEstudiante
+    actualizarEstudiante,
+    eliminarEstudiante
 }
