@@ -1,5 +1,6 @@
 import Estudiante from '../models/Estudiante.js';
 import Usuarios from '../models/Usuarios.js';
+import mongoose from 'mongoose';
 
 //CRUD de estudiantes por medio de un usuario (administrador)
 
@@ -35,7 +36,8 @@ const crearEstudiante = async(req,res) => {
     }
 }
 
-//2. Ver/Listar estudiantes asociados a un usuario (administrador)
+//2. Ver/listar estudiantes.
+//2. Ver/listar estudiantes.
 const listarEstudiantes = async (req, res) => {
     try {
 
@@ -43,10 +45,28 @@ const listarEstudiantes = async (req, res) => {
             estadoEstudiante: "Activo",
             creadoPor: req.usuarioHeader._id
         })
-        .select("cedula ciudad telefono fechaIngresoEstudiante estadoEstudiante usuario")
-        .populate("creadoPor", "nombre apellido email");
+        .populate("usuario", "nombre apellido email rol")
+        .populate("creadoPor", "nombre apellido email rol");
 
-        res.status(200).json(estudiantes);
+        //Transformar la respuesta
+        const resultado = estudiantes.map(est => ({
+            nombre: est.usuario?.nombre,
+            apellido: est.usuario?.apellido,
+            cedula: est.cedula,
+            fecha_nacimiento: est.fecha_nacimiento,
+            direccion: est.ciudad, 
+            telefono: est.telefono,
+            email: est.usuario?.email,
+            rol: est.usuario?.rol,
+            creadoPor: {
+                nombre: est.creadoPor?.nombre,
+                apellido: est.creadoPor?.apellido,
+                email: est.creadoPor?.email,
+                rol: est.creadoPor?.rol
+            }
+        }));
+
+        res.status(200).json(resultado);
 
     } catch (error) {
         console.error(error);
@@ -56,8 +76,129 @@ const listarEstudiantes = async (req, res) => {
     }
 };
 
+//Visualizar el detalle de un registro en particular
+const detalleEstudiante = async (req, res) => {
+    try {
+
+        const { id } = req.params;
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(404).json({ 
+                msg: `No existe el estudiante ${id}` 
+            });
+        }
+
+        const estudiante = await Estudiante.findById(id)
+            .populate("usuario", "nombre apellido email rol")
+            .populate("creadoPor", "nombre apellido email rol");
+
+        if (!estudiante) {
+            return res.status(404).json({
+                msg: "Estudiante no encontrado"
+            });
+        }
+
+        //Formatear la respuesta
+        const resultado = {
+            _id: estudiante._id,
+            nombre: estudiante.usuario?.nombre,
+            apellido: estudiante.usuario?.apellido,
+            cedula: estudiante.cedula,
+            fecha_nacimiento: estudiante.fecha_nacimiento,
+            direccion: estudiante.direccion,
+            ciudad: estudiante.ciudad,
+            telefono: estudiante.telefono,
+            email: estudiante.usuario?.email,
+            rol: estudiante.usuario?.rol,
+            creadoPor: {
+                id: estudiante.creadoPor?._id,
+                nombre: estudiante.creadoPor?.nombre,
+                apellido: estudiante.creadoPor?.apellido,
+                email: estudiante.creadoPor?.email,
+                rol: estudiante.creadoPor?.rol
+            }
+        };
+
+        res.status(200).json(resultado);
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ 
+            msg: `Error al procesar solicitud - ${error}` 
+        });
+    }
+};
+
+//3. Actualizar la información de un estudiante 
+const actualizarEstudiante = async (req, res) => {
+    try {
+
+        const { id } = req.params;
+
+        //Verificar que el usuario exista en la BDD
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(404).json({
+                msg: `No existe el estudiante ${id}`
+            });
+        }
+
+        const estudiante = await Estudiante.findById(id);
+
+        if (!estudiante) {
+            return res.status(404).json({
+                msg: "Estudiante no encontrado"
+            });
+        }
+
+        // Campos permitidos del estudiante
+        const {
+            nombre,
+            apellido,
+            cedula,
+            ciudad,
+            direccion,
+            telefono,
+            estadoEstudiante,
+            email
+        } = req.body;
+
+        // Actualizar datos del estudiante
+        if (cedula) estudiante.cedula = cedula;
+        if (ciudad) estudiante.ciudad = ciudad;
+        if (direccion) estudiante.direccion = direccion;
+        if (telefono) estudiante.telefono = telefono;
+        if (estadoEstudiante) estudiante.estadoEstudiante = estadoEstudiante;
+
+        await estudiante.save();
+
+        // Actualizar datos del usuario relacionado
+        if (nombre || apellido || email) {
+            await Usuario.findByIdAndUpdate(
+                estudiante.usuario,
+                {
+                    ...(nombre && { nombre }),
+                    ...(apellido && { apellido }),
+                    ...(email && { email })
+                },
+                { new: true }
+            );
+        }
+
+        res.status(200).json({
+            msg: "Datos del estudiante actualizados correctamente"
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            msg: `Error al actualizar - ${error}`
+        });
+    }
+};
 
 export {
     crearEstudiante,
-    listarEstudiantes
+    listarEstudiantes,
+    detalleEstudiante,
+    actualizarEstudiante
 }
