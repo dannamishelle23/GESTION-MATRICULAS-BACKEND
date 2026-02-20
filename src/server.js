@@ -4,6 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import routerUsuarios from './routers/usuario_routes.js';
 import routerEstudiantes from './routers/estudiante_routes.js';
+import routerMaterias from './routers/materia_routes.js';
 
 //Inicializaciones
 const app = express();
@@ -26,6 +27,9 @@ app.use('/api', routerUsuarios);
 
 //Rutas para estudiantes
 app.use('/api', routerEstudiantes);
+
+//Rutas para materias 
+app.use('/api', routerMaterias);
 
 //Manejo de una ruta que no sea encontrada
 app.use((req, res) => {
