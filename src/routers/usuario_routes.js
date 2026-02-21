@@ -4,8 +4,8 @@ import { verificarTokenJWT } from '../middlewares/JWT.js';
 
 const router = Router();
 /*
-Ruta para registro en caso de que sea público
-El registro de los usuarios es manual en la BDD
+//Ruta para registro en caso de que sea público
+//El registro de los usuarios es manual en la BDD
 router.post('/usuario/registro', registroUsuarios)
 */
 

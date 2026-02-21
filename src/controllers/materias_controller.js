@@ -192,8 +192,22 @@ const eliminarMaterias = async (req, res) => {
             });
         }
 
-        materia.fechaEliminacionMateria = new Date(fechaEliminacionMateria);
+        //Verificar si la materia tiene matriculas activas
+        const matriculasActivas = await Matriculas.findOne({ 
+            materiaID: materia._id,
+            estadoMatricula: true
+        });
+
+        //No eliminar la materia si tiene estudiantes matriculados
+        if (matriculasActivas) {
+            return res.status(400).json({
+                msg: "No se puede eliminar la materia porque tiene estudiantes matriculados."
+            });
+        }
+
+        //Dar de baja la materia
         materia.estadoMateria = false;
+        materia.fechaEliminacionMateria = new Date(fechaEliminacionMateria);
 
         await materia.save();
 

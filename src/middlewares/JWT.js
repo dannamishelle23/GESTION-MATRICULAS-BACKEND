@@ -29,8 +29,8 @@ const verificarTokenJWT = async (req, res, next) => {
 
     req.usuarioHeader = usuarioBDD
 
-    // Si quieres validar rol:
-    if (rol !== "Admin") {
+    // Validar que el rol sea válido
+    if (rol !== "Admin" && rol !== "Estudiante") {
       return res.status(403).json({
         message: "Acceso denegado. No tienes permisos."
       })
@@ -46,7 +46,51 @@ const verificarTokenJWT = async (req, res, next) => {
   }
 }
 
+// Middleware para validar que el usuario sea Admin
+const autorizarAdmin = (req, res, next) => {
+  if (req.usuarioHeader.rol !== "Admin") {
+    return res.status(403).json({
+      message: "Acceso denegado. Solo administradores pueden realizar esta acción."
+    })
+  }
+  next()
+}
+
+// Middleware para validar que el usuario sea Estudiante
+const autorizarEstudiante = (req, res, next) => {
+  if (req.usuarioHeader.rol !== "Estudiante") {
+    return res.status(403).json({
+      message: "Acceso denegado. Solo estudiantes pueden realizar esta acción."
+    })
+  }
+  next()
+}
+
+// Middleware para validar que el admin o estudiante vean las matrículas 
+const autorizarAdminOEstudiante = (req, res, next) => {
+  if (req.usuarioHeader.rol !== "Admin" && req.usuarioHeader.rol !== "Estudiante") {
+    return res.status(403).json({
+      message: "Acceso denegado. Debes tener un rol válido."
+    })
+  }
+  next()
+}
+
+// Middleware para que Admin y Estudiante puedan leer materias, solo el admin puede modificar
+const autorizarAdminOEstudianteLectura = (req, res, next) => {
+  if (req.usuarioHeader.rol !== "Admin" && req.usuarioHeader.rol !== "Estudiante") {
+    return res.status(403).json({
+      message: "Acceso denegado. Debes tener un rol válido para consultar materias."
+    })
+  }
+  next()
+}
+
 export {
     crearTokenJWT,
-    verificarTokenJWT
+    verificarTokenJWT,
+    autorizarAdmin,
+    autorizarEstudiante,
+    autorizarAdminOEstudiante,
+    autorizarAdminOEstudianteLectura
 }

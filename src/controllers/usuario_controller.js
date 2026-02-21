@@ -17,7 +17,8 @@ const registroUsuarios = async(req,res) => {
   } catch (error) {
     res.status(500).json({message: `Error al procesar la solicitud - ${error}`})
   }
-}*/
+}
+*/
 
 //Recuperar contraseña en caso de olvido
 const recuperarPassword = async(req,res) => {

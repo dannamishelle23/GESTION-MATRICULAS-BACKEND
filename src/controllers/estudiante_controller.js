@@ -1,13 +1,14 @@
 import Estudiante from '../models/Estudiante.js';
 import Usuarios from '../models/Usuarios.js';
 import mongoose from 'mongoose';
+import {sendMailToNewStudent} from '../helpers/sendMail.js';
 
 //CRUD de estudiantes por medio de un usuario (administrador)
 
 //1. CREAR ESTUDIANTES
 const crearEstudiante = async(req,res) => {
     try {
-        const {nombre, apellido, email, password, cedula, fecha_nacimiento, ciudad, direccion, telefono} = req.body
+        const {nombre, apellido, email, cedula, fecha_nacimiento, ciudad, direccion, telefono} = req.body
         if (Object.values(req.body).includes("")) return res.status(400).json({message: "Todos los campos son obligatorios."})
         if (cedula.length < 7 || cedula.length > 10) return res.status(400).json({message: "La cédula debe tener entre 7 y 10 dígitos."})
         //1. Verificar si el email y la cédula existen en la BDD
@@ -21,13 +22,16 @@ const crearEstudiante = async(req,res) => {
                 message: `El usuario ya se encuentra registrado con ese correo o cédula en el sistema. No puedes usar datos que ya pertenecen a otro usuario.`
             });
         }
-        //2. Crear usuario con rol 'Estudiante'
+        //2. Generar contraseña aleatoria corta
+        const passwordGenerada = Math.random().toString(36).slice(2, 10);
+        
+        //3. Crear usuario con rol 'Estudiante'
         const nuevoUsuario = new Usuarios({
-            nombre,apellido, email, password, rol: "Estudiante"
+            nombre,apellido, email, password: passwordGenerada, rol: "Estudiante"
         });
-        nuevoUsuario.password = await nuevoUsuario.encryptPassword(password)
+        nuevoUsuario.password = await nuevoUsuario.encryptPassword(passwordGenerada)
         const usuarioGuardado = await nuevoUsuario.save()
-        //3. Crear estudiante asociado al usuario creado
+        //4. Crear estudiante asociado al usuario creado
         const nuevoEstudiante = new Estudiante({
             cedula,
             fecha_nacimiento,
@@ -38,7 +42,18 @@ const crearEstudiante = async(req,res) => {
             creadoPor: req.usuarioHeader._id
         })
         await nuevoEstudiante.save()
-        res.status(201).json({message: "El estudiante ha sido creado con éxito."})
+        
+        //5. Enviar correo con credenciales
+        await sendMailToNewStudent(email, nombre, email, passwordGenerada)
+        
+        res.status(201).json({
+            message: "El estudiante ha sido creado con éxito.",
+            credenciales: {
+                email: email,
+                password: passwordGenerada,
+                aviso: "Las credenciales han sido enviadas al correo del estudiante."
+            }
+        })
     } catch (error) {
         console.error(error);
         res.status(500).json({message: `Error al procesar la solicitud - ${error}`})
