@@ -14,7 +14,19 @@ const verificarTokenJWT = async (req, res, next) => {
     })
 
   try {
-    const token = authorization.split(" ")[1]
+    let token = authorization
+    
+    // Si viene con formato "Bearer <token>", extrae el token
+    if (authorization.includes(" ")) {
+      token = authorization.split(" ")[1]
+    }
+
+    // Validar que el token exista y no esté vacío
+    if (!token || token === "undefined") {
+      return res.status(401).json({
+        message: "Token no encontrado o malformado."
+      })
+    }
 
     const { id, rol } = jwt.verify(token, process.env.JWT_SECRET)
 

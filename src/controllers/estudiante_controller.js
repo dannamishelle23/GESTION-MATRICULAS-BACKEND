@@ -30,7 +30,20 @@ const crearEstudiante = async(req,res) => {
             nombre,apellido, email, password: passwordGenerada, rol: "Estudiante"
         });
         nuevoUsuario.password = await nuevoUsuario.encryptPassword(passwordGenerada)
-        const usuarioGuardado = await nuevoUsuario.save()
+        
+        let usuarioGuardado
+        try {
+            usuarioGuardado = await nuevoUsuario.save()
+        } catch (errorGuardar) {
+            // Si hay error al guardar (ej: email duplicado), rechazar
+            if (errorGuardar.code === 11000) {
+                return res.status(400).json({
+                    message: "El email ya se encuentra registrado en el sistema."
+                })
+            }
+            throw errorGuardar
+        }
+        
         //4. Crear estudiante asociado al usuario creado
         const nuevoEstudiante = new Estudiante({
             cedula,
@@ -41,10 +54,24 @@ const crearEstudiante = async(req,res) => {
             usuario: usuarioGuardado._id,
             creadoPor: req.usuarioHeader._id
         })
-        await nuevoEstudiante.save()
         
-        //5. Enviar correo con credenciales
-        await sendMailToNewStudent(email, nombre, email, passwordGenerada)
+        try {
+            await nuevoEstudiante.save()
+        } catch (errorEstudiante) {
+            // Si hay error al guardar estudiante (ej: cédula duplicada), eliminar el usuario creado
+            await Usuarios.findByIdAndDelete(usuarioGuardado._id)
+            if (errorEstudiante.code === 11000) {
+                return res.status(400).json({
+                    message: "La cédula ya se encuentra registrada en el sistema."
+                })
+            }
+            throw errorEstudiante
+        }
+        
+        //5. Enviar correo con credenciales (sin bloquear la respuesta)
+        sendMailToNewStudent(email, nombre, email, passwordGenerada).catch(err => {
+            console.error("Error al enviar email al estudiante:", err)
+        })
         
         res.status(201).json({
             message: "El estudiante ha sido creado con éxito.",

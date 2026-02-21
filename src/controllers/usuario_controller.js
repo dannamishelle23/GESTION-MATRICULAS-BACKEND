@@ -36,8 +36,10 @@ const recuperarPassword = async(req,res) => {
     usuarioBDD.token = token
     await usuarioBDD.save()
     console.log("Token guardado: ", usuarioBDD.token)
-    //Enviar el email de recuperación de contraseña
-    await sendMailToRecoveryPassword(email, token)
+    //Enviar el email de recuperación de contraseña (sin bloquear la respuesta)
+    sendMailToRecoveryPassword(email, token).catch(err => {
+        console.error("Error al enviar email de recuperación:", err)
+    })
     res.status(200).json({message: "Se ha enviado un correo electrónico con las instrucciones para restablecer su contraseña."})
   } catch (error) {
     console.error(error);
